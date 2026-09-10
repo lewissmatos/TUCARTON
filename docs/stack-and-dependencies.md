@@ -8,6 +8,7 @@
 | Mobile                       | Expo SDK 57, React Native, React, TypeScript, Expo Router | Product-spec baseline for Android and iOS. Expo SDK 57 documents a Node.js minimum of `22.13.x`.               |
 | Mobile persistence           | `expo-sqlite`                                             | Required local database boundary for later offline-first reads and persistent outbox work.                     |
 | Mobile credential storage    | `expo-secure-store`                                       | Required boundary for later session/device credential storage.                                                 |
+| Mobile authentication        | `react-native-auth0`                                      | Auth0 Universal Login with PKCE; its native credential manager uses iOS Keychain/Android Keystore.             |
 | Mobile QR capability         | `expo-camera`                                             | Later QR scanning work needs barcode detection; no QR product flow is implemented here.                        |
 | API                          | NestJS, Express adapter, TypeScript                       | Product-spec modular monolith baseline.                                                                        |
 | API contract                 | REST, URI versioning, `@nestjs/swagger`                   | The foundation exposes generated OpenAPI at `/api/docs`.                                                       |
@@ -22,7 +23,7 @@ Versions are declared as exact versions in workspace manifests and resolved in `
 | Workspace                | Dependencies                                                                                                                                                                                                        |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Root development tooling | `@eslint/js@10.0.1`, `@types/node@22.20.2`, `eslint@10.10.0`, `prettier@3.9.6`, `typescript@6.0.3`, `typescript-eslint@8.70.0`, `vitest@5.0.0`                                                                      |
-| `@tucarton/mobile`       | `expo@57.0.21`, `expo-camera@57.0.4`, `expo-router@57.0.20`, `expo-secure-store@57.0.3`, `expo-sqlite@57.0.2`, `react@19.2.3`, `react-native@0.86.3`                                                                |
+| `@tucarton/mobile`       | `expo@57.0.21`, `expo-blur@~57.0.2`, `expo-camera@57.0.4`, `expo-router@57.0.20`, `expo-secure-store@57.0.3`, `expo-sqlite@57.0.2`, `react-native-auth0@^5.11.1`, `react@19.2.3`, `react-native@0.86.3`             |
 | `@tucarton/api`          | `@nestjs/common@12.0.1`, `@nestjs/core@12.0.1`, `@nestjs/platform-express@12.0.1`, `@nestjs/swagger@12.0.1`, `reflect-metadata@0.2.2`, `rxjs@7.8.2`; development: `@nestjs/cli@12.0.0`, `@nestjs/schematics@12.0.0` |
 | `@tucarton/validation`   | `zod@3.25.76`                                                                                                                                                                                                       |
 
@@ -43,8 +44,7 @@ packages/config   Shared build/tool configuration
 
 The following are intentionally not installed or selected by this foundation work item:
 
-- Authentication and OTP/session provider (`TBD-001`)
-- ORM/database toolkit and migrations (`TBD-002`)
+- Real SMS delivery provider / Twilio Verify activation (`TBD-001`)
 - Hosting (`TBD-003`)
 - Push-notification provider (`TBD-004`)
 - Offline digital signatures, device credentials, credential lifetime, and replay protection (`TBD-005`, `TBD-006`)
@@ -57,5 +57,7 @@ The following are intentionally not installed or selected by this foundation wor
 3. Copy `.env.example` to `.env` only if tooling needs environment variables; do not commit it.
 4. Run `npm run db:up` to start local PostgreSQL, then `npm run api:dev` or `npm run mobile:start`.
 5. Run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm test` before handing work to verification.
+
+Auth0's React Native SDK requires a development build or EAS build; Expo Go cannot load its native module. For a physical device on the same Wi-Fi network, set `EXPO_PUBLIC_API_URL` in an untracked `apps/mobile/.env` to the Mac's LAN URL before creating a local API profile.
 
 The Compose password is intentionally local and non-production. Replace it only in an untracked environment file.

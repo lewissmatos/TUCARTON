@@ -1,3 +1,3 @@
 /// <reference types="expo/types" />
 
-// This file is generated/maintained by Expo tooling; keep it committed for type checks.
+// NOTE: This file should not be edited and should be in your git ignore

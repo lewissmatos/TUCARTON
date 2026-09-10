@@ -1,16 +1,29 @@
 {
   "expo": {
-    "name": "TuCarton",
+    "name": "TuCartón",
     "slug": "tucarton",
     "scheme": "tucarton",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router", "expo-secure-store", "expo-sqlite", "expo-camera"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-camera",
+      [
+        "react-native-auth0",
+        {
+          "domain": "dev-cwpsbs7tbid3scpa.us.auth0.com",
+          "customScheme": "tucarton"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     },
     "ios": {
+      "bundleIdentifier": "com.tucarton.app",
       "supportsTablet": true
     },
     "android": {

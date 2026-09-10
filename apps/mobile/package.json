@@ -9,11 +9,14 @@
   },
   "dependencies": {
     "expo": "57.0.21",
+    "expo-blur": "~57.0.2",
     "expo-camera": "57.0.4",
+    "expo-dev-client": "^57.0.18",
     "expo-router": "57.0.20",
     "expo-secure-store": "57.0.3",
     "expo-sqlite": "57.0.2",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-native": "0.86.3",
+    "react-native-auth0": "^5.11.1"
   }
 }

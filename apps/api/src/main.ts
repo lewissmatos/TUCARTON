@@ -5,6 +5,10 @@ import { AppModule } from './app.module.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    origin: true,
+  });
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI });
 
@@ -14,7 +18,7 @@ async function bootstrap(): Promise<void> {
   );
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 
 void bootstrap();
