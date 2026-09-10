@@ -1,0 +1,19 @@
+{
+  "name": "@tucarton/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "57.0.21",
+    "expo-camera": "57.0.4",
+    "expo-router": "57.0.20",
+    "expo-secure-store": "57.0.3",
+    "expo-sqlite": "57.0.2",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  }
+}

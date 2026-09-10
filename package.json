@@ -1,0 +1,37 @@
+{
+  "name": "tucarton",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TuCarton offline-first shared debt ledger monorepo.",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "npm": ">=11.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "npm run start:dev --workspace=@tucarton/api",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:up": "docker compose up -d postgres",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "lint": "eslint .",
+    "mobile:start": "npm run start --workspace=@tucarton/mobile",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.2",
+    "eslint": "10.10.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.0"
+  }
+}

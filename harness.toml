@@ -1,0 +1,104 @@
+# TUCARTON multi-agent harness manifest.
+# This file is intentionally portable: orchestration tools may read it directly,
+# while humans and Codex agents use it with AGENTS.md and .agents/WORKFLOW.md.
+
+[harness]
+name = "TUCARTON"
+version = "0.1.0"
+mode = "supervised-spec-driven-development"
+human_role = "senior_developer"
+instruction_file = "AGENTS.md"
+work_items_dir = ".agents/work-items"
+templates_dir = ".agents/templates"
+
+[policy]
+spec_required_before_implementation = true
+human_approval_required_for_spec = true
+independent_verification_required = true
+human_acceptance_required = true
+allow_unapproved_spikes = true
+allow_external_side_effects_without_human_approval = false
+allow_agent_merge_without_human_approval = false
+allow_agent_deploy_without_human_approval = false
+
+[artifacts]
+specification = "spec.md"
+implementation_plan = "implementation-plan.md"
+verification_report = "verification-report.md"
+decision_log = "decisions.md"
+
+[workflow]
+states = [
+  "intake",
+  "draft_spec",
+  "awaiting_spec_approval",
+  "approved_for_implementation",
+  "implementing",
+  "awaiting_verification",
+  "remediation_required",
+  "awaiting_final_acceptance",
+  "accepted",
+  "rejected",
+]
+terminal_states = ["accepted", "rejected"]
+
+[[workflow.transition]]
+from = "intake"
+to = "draft_spec"
+owner = "spec_writer"
+
+[[workflow.transition]]
+from = "draft_spec"
+to = "awaiting_spec_approval"
+owner = "spec_writer"
+
+[[workflow.transition]]
+from = "awaiting_spec_approval"
+to = "approved_for_implementation"
+owner = "senior_developer"
+gate = "spec_approval"
+
+[[workflow.transition]]
+from = "approved_for_implementation"
+to = "implementing"
+owner = "coder"
+
+[[workflow.transition]]
+from = "implementing"
+to = "awaiting_verification"
+owner = "coder"
+
+[[workflow.transition]]
+from = "awaiting_verification"
+to = "awaiting_final_acceptance"
+owner = "verifier"
+gate = "independent_verification"
+
+[[workflow.transition]]
+from = "awaiting_verification"
+to = "remediation_required"
+owner = "verifier"
+gate = "independent_verification"
+
+[[workflow.transition]]
+from = "remediation_required"
+to = "implementing"
+owner = "coder"
+
+[[workflow.transition]]
+from = "awaiting_final_acceptance"
+to = "accepted"
+owner = "senior_developer"
+gate = "final_acceptance"
+
+[[workflow.transition]]
+from = "awaiting_final_acceptance"
+to = "remediation_required"
+owner = "senior_developer"
+gate = "final_acceptance"
+
+[quality]
+require_acceptance_criterion_mapping = true
+require_command_evidence = true
+require_risk_assessment = true
+require_regression_assessment = true

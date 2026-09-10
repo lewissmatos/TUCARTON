@@ -1,0 +1,32 @@
+# Role registry. Assign one active owner per role for each work item.
+
+[[agents]]
+id = "spec_writer"
+display_name = "Spec Writer"
+instruction_file = ".agents/roles/spec-writer.md"
+owns = ["spec.md", "decisions.md"]
+may = ["clarify_requirements", "define_acceptance_criteria", "propose_test_strategy", "request_approval"]
+may_not = ["approve_spec", "implement_production_changes", "accept_work"]
+
+[[agents]]
+id = "coder"
+display_name = "Coder"
+instruction_file = ".agents/roles/coder.md"
+owns = ["implementation-plan.md", "source_changes", "implementation_evidence"]
+may = ["plan_implementation", "change_code", "run_relevant_checks", "request_verification"]
+may_not = ["approve_spec", "change_approved_scope", "self_verify_for_acceptance", "accept_work"]
+
+[[agents]]
+id = "verifier"
+display_name = "Verifier"
+instruction_file = ".agents/roles/verifier.md"
+owns = ["verification-report.md"]
+may = ["inspect_changes", "run_independent_checks", "report_findings", "request_remediation"]
+may_not = ["repair_evaluated_implementation", "approve_spec", "accept_work"]
+
+[[agents]]
+id = "senior_developer"
+display_name = "Senior Developer"
+kind = "human"
+owns = ["approval_decisions", "scope_decisions", "final_acceptance"]
+may = ["approve_spec", "authorize_exceptions", "accept_work", "reject_work", "authorize_external_actions"]
