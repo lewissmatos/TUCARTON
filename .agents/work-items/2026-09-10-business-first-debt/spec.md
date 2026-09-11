@@ -29,7 +29,7 @@ After creating a phone-based account, a user needs to start using TuCartón imme
 
 - Payments, settlements, QR/offline mode, invitations, and notifications.
 - Business member invitations and roles beyond the owner membership.
-- Auth0 and external SMS verification changes.
+- External identity-provider or account-recovery changes.
 
 ## Requirements
 

@@ -50,7 +50,7 @@ The outcome is a roadmap that guides implementation of the whole application wit
 | R2 — Balances and payments | Both parties can see confirmed balances and record/acknowledge payments. | Immutable ledger model, balance projection, payment request and acknowledgment flows, transaction history and correction policy. Depends on R1. |
 | R3 — Real-world access | The app works for in-person use with codes, QR, and unreliable connectivity. | TuCartón Code profile/share screen, QR generation/scanning, offline queue/database, sync protocol, conflict/idempotency rules. Depends on R2 ledger invariants. |
 | R4 — Business collaboration | A business can operate with trusted staff without losing accountability. | Member invitations, OWNER/MEMBER authorization, audit history, member management UI. Depends on R1; uses R2 history model. |
-| R5 — Production readiness | A secure, observable, releasable Dominican-market app. | Twilio Verify production configuration, environment/secrets policy, API security/rate limiting, telemetry/error reporting, data backup/recovery, iOS release signing, privacy/support materials. Depends on the chosen launch scope from R1–R4. |
+| R5 — Production readiness | A secure, observable, releasable Dominican-market app. | Local account security/rate limiting, environment/secrets policy, telemetry/error reporting, data backup/recovery, iOS release signing, privacy/support materials. Depends on the chosen launch scope from R1–R4. |
 
 ## Target structure and ownership
 
@@ -85,8 +85,7 @@ The outcome is a roadmap that guides implementation of the whole application wit
 
 - Preserve the existing npm workspace monorepo, Nest API, Expo mobile app, Drizzle/PostgreSQL persistence, and iOS native project.
 - Preserve Spanish end-user copy and the TuCartón visual system; central design tokens remain the source of truth for the mobile interface.
-- Keep Twilio Verify optional until production SMS is explicitly authorized; the development OTP provider remains development-only.
-- Auth0 is not the primary end-user path under the phone-first decision; any continued use must have a documented backend/security purpose.
+- Keep the local phone-and-passcode flow as the only MVP identity model; recovery and stronger verification require a future product decision.
 
 ## Test strategy
 
@@ -103,7 +102,7 @@ The outcome is a roadmap that guides implementation of the whole application wit
 | --- | --- | --- |
 | Assumption | R1 and R2 are the minimum initial launch scope; R3/R4 may follow based on pilot feedback. | Senior Developer |
 | Risk | Offline synchronization before an immutable, tested ledger could corrupt user trust. | Senior Developer: retain R2 before R3 ordering |
-| Risk | Production SMS and Auth0 configuration carry external cost/configuration dependencies. | Senior Developer authorization required |
+| Risk | Numeric passcodes need a future recovery and durable abuse-control policy before release. | Senior Developer authorization required |
 | Risk | Current first-debt work is exploratory until the latest API/mobile integration is independently verified. | Verifier when requested |
 
 ## Open questions

@@ -24,7 +24,7 @@ TuCartón must instead behave as an application with a clear flow. A user gets a
 - Replace the current post-login catch-all workspace with Expo Router route groups and task-specific screens.
 - Add a persistent mobile session provider so authenticated routes do not independently restore session state.
 - Add the primary navigation and flows below:
-  1. Phone access → verified account.
+  1. Account creation or login → authenticated account.
   2. Home → choose/create a colmado or review customer pending actions.
   3. Create colmado → return to that colmado's overview.
   4. Colmado overview → create debt, manage customers, or open history.
@@ -71,7 +71,7 @@ Authenticated app
 ## Requirements
 
 - `R-01`: No authenticated screen may combine business creation, customer creation, debt entry, pending decisions, and history into one form/card.
-- `R-02`: After successful phone verification, a user lands on `Inicio`, not on a setup form. `Inicio` must be useful whether the user has zero, one, or multiple businesses.
+- `R-02`: After successful account creation or login, a user lands on `Inicio`, not on a setup form. `Inicio` must be useful whether the user has zero, one, or multiple businesses.
 - `R-03`: A user with no business can create one through an explicit “Crear colmado” call to action, on its own screen.
 - `R-04`: A business overview must present no more than three primary operational actions: “Registrar pendiente”, “Clientes”, and “Historial”.
 - `R-05`: Debt entry must be a dedicated form. It must require a previously linked customer, amount, and optional note; if no customer is linked, it must direct the user to `Clientes` rather than expose an ambiguous code field.
@@ -135,6 +135,7 @@ Authenticated app
 | Approved | Senior Developer | 2026-09-10 | Implement stack navigation without a bottom tab bar; use “Mi cuenta” as the customer-facing label. |
 | Approved scope amendment | Senior Developer | 2026-09-10 | Replace business-facing end-user use of “Personas” with “Clientes”; preserve neutral internal model and routes. |
 | Approved scope amendment | Senior Developer | 2026-09-11 | Make phone access keyboard-safe on iPhone so the primary action is not obscured by the numeric keyboard. |
+| Approved scope amendment | Senior Developer | 2026-09-11 | Replace phone verification terminology with local account creation/login. |
 
 ## Handoff
 

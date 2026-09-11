@@ -1,5 +1,7 @@
 # Specification: TuCarton Authentication Architecture Decision Spike
 
+> Superseded historical research — 2026-09-11. Do not implement this provider-based recommendation. The active decision is [ADR-008](../../../docs/adr/ADR-008-authentication-architecture.md) and work item `2026-09-11-credentials-profile-access`.
+
 ## Metadata
 
 | Field | Value |

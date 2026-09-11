@@ -36,6 +36,13 @@
       "when": 1789401600000,
       "tag": "0004_profile_passcode_access",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789488000000,
+      "tag": "0005_remove_phone_verification",
+      "breakpoints": true
     }
   ]
 }

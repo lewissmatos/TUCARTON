@@ -7,7 +7,6 @@ export const users = pgTable('users', {
   displayName: text('display_name'),
   phoneE164: text('phone_e164').unique(),
   passcodeHash: text('passcode_hash'),
-  phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

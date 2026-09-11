@@ -1,5 +1,7 @@
 # Specification: TuCartón Phone-First Access
 
+> Superseded historical specification — 2026-09-11. Do not implement the code-based access flow. The active decision is [ADR-008](../../../docs/adr/ADR-008-authentication-architecture.md) and work item `2026-09-11-credentials-profile-access`.
+
 ## Metadata
 
 | Field | Value |
