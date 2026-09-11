@@ -3,6 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { DatabaseService } from '../db/database.service.js';
 import { businessMembers, businesses, customerRelationships, debts, users } from '../db/schema.js';
+import { looksLikePhoneIdentifier, normalizeDominicanPhone } from '../auth/phone.js';
 
 @Injectable()
 export class BusinessService {
@@ -27,20 +28,22 @@ export class BusinessService {
       .orderBy(desc(businesses.createdAt));
   }
 
-  async addCustomer(userId: string, businessId: string, tuCartonCodeInput: string) {
+  async addCustomer(userId: string, businessId: string, identifierInput: string) {
     await this.requireMember(userId, businessId);
-    const code = tuCartonCodeInput?.trim().toUpperCase();
-    const customer = await this.database.db.query.users.findFirst({ where: eq(users.tuCartonCode, code) });
-    if (!customer) throw new NotFoundException('No encontramos ese código de TuCartón.');
+    const customer = await this.findCustomer(identifierInput);
+    if (!customer) throw new NotFoundException('No encontramos un cliente con ese código o número.');
     if (customer.id === userId) throw new ConflictException('No puedes agregarte a ti mismo.');
     try {
       const [relationship] = await this.database.db
         .insert(customerRelationships)
         .values({ id: randomUUID(), businessId, customerUserId: customer.id })
         .returning();
-      return { ...relationship, customer: { tuCartonCode: customer.tuCartonCode } };
+      return {
+        ...relationship,
+        customer: { displayName: customer.displayName, tuCartonCode: customer.tuCartonCode },
+      };
     } catch (error: unknown) {
-      if (this.isUniqueViolation(error)) throw new ConflictException('Esta persona ya está agregada.');
+      if (this.isUniqueViolation(error)) throw new ConflictException('Este cliente ya está agregado.');
       throw error;
     }
   }
@@ -48,21 +51,31 @@ export class BusinessService {
   async listCustomers(userId: string, businessId: string) {
     await this.requireMember(userId, businessId);
     return this.database.db
-      .select({ relationshipId: customerRelationships.id, tuCartonCode: users.tuCartonCode })
+      .select({
+        relationshipId: customerRelationships.id,
+        displayName: users.displayName,
+        tuCartonCode: users.tuCartonCode,
+      })
       .from(customerRelationships)
       .innerJoin(users, eq(users.id, customerRelationships.customerUserId))
       .where(eq(customerRelationships.businessId, businessId));
   }
 
-  async createDebt(userId: string, businessId: string, customerCode: string, amountMinor: number, note?: string) {
+  async createDebt(
+    userId: string,
+    businessId: string,
+    customerIdentifier: string,
+    amountMinor: number,
+    note?: string,
+  ) {
     await this.requireMember(userId, businessId);
     if (!Number.isInteger(amountMinor) || amountMinor <= 0) throw new ConflictException('El monto debe ser mayor que cero.');
-    const customer = await this.database.db.query.users.findFirst({ where: eq(users.tuCartonCode, customerCode.trim().toUpperCase()) });
-    if (!customer) throw new NotFoundException('No encontramos ese código de TuCartón.');
+    const customer = await this.findCustomer(customerIdentifier);
+    if (!customer) throw new NotFoundException('No encontramos un cliente con ese código o número.');
     const relationship = await this.database.db.query.customerRelationships.findFirst({
       where: and(eq(customerRelationships.businessId, businessId), eq(customerRelationships.customerUserId, customer.id)),
     });
-    if (!relationship) throw new ConflictException('Agrega primero a esta persona al negocio.');
+    if (!relationship) throw new ConflictException('Agrega primero a este cliente al negocio.');
     const [debt] = await this.database.db.insert(debts).values({
       id: randomUUID(), businessId, customerUserId: customer.id, createdByUserId: userId,
       amountMinor, note: note?.trim() || null, currency: 'DOP', status: 'PENDING_CUSTOMER_ACK',
@@ -92,6 +105,19 @@ export class BusinessService {
     const member = await this.database.db.query.businessMembers.findFirst({ where: and(eq(businessMembers.businessId, businessId), eq(businessMembers.userId, userId)) });
     if (!member) throw new ForbiddenException('No tienes acceso a este negocio.');
     return member;
+  }
+
+  private async findCustomer(identifierInput: string) {
+    const identifier = identifierInput?.trim();
+    if (!identifier) return undefined;
+    if (looksLikePhoneIdentifier(identifier)) {
+      const phoneE164 = normalizeDominicanPhone(identifier);
+      if (!phoneE164) return undefined;
+      return this.database.db.query.users.findFirst({ where: eq(users.phoneE164, phoneE164) });
+    }
+    return this.database.db.query.users.findFirst({
+      where: eq(users.tuCartonCode, identifier.toUpperCase()),
+    });
   }
 
   private isUniqueViolation(error: unknown): boolean {

@@ -15,8 +15,8 @@ export class BusinessController {
   async list(@Headers('authorization') auth: string | undefined) { return this.business.list(await this.user(auth)); }
 
   @Post(':businessId/customers')
-  async addCustomer(@Headers('authorization') auth: string | undefined, @Param('businessId') businessId: string, @Body('tuCartonCode') code: string) {
-    return this.business.addCustomer(await this.user(auth), businessId, code);
+  async addCustomer(@Headers('authorization') auth: string | undefined, @Param('businessId') businessId: string, @Body('identifier') identifier: string) {
+    return this.business.addCustomer(await this.user(auth), businessId, identifier);
   }
 
   @Get(':businessId/customers')
@@ -25,8 +25,8 @@ export class BusinessController {
   }
 
   @Post(':businessId/debts')
-  async debt(@Headers('authorization') auth: string | undefined, @Param('businessId') businessId: string, @Body() body: { tuCartonCode: string; amountMinor: number; note?: string }) {
-    return this.business.createDebt(await this.user(auth), businessId, body.tuCartonCode, body.amountMinor, body.note);
+  async debt(@Headers('authorization') auth: string | undefined, @Param('businessId') businessId: string, @Body() body: { identifier: string; amountMinor: number; note?: string }) {
+    return this.business.createDebt(await this.user(auth), businessId, body.identifier, body.amountMinor, body.note);
   }
 
   @Get(':businessId/debts')

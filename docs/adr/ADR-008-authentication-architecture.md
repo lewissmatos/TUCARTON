@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed by authentication architecture spike on 2026-09-09. Requires Senior Developer approval before production implementation.
+Superseded for the MVP by the approved [profile registration and passcode access work item](../../.agents/work-items/2026-09-11-credentials-profile-access/spec.md) on 2026-09-11. It remains as historical architecture research only; Auth0, Twilio Verify, and OTP are not part of the active application flow.
 
 ## Context
 

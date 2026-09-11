@@ -3,179 +3,91 @@ import { createHash, randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { DatabaseService } from '../db/database.service.js';
 import { authAuditEvents, users } from '../db/schema.js';
-import type { AuthenticatedIdentity } from './auth.types.js';
-import { FakePhoneVerificationProvider } from './fake-phone-verification.provider.js';
+import { hashPasscode, isValidPasscode, matchesPasscode } from './passcode.js';
+import { normalizeDominicanPhone } from './phone.js';
 
 export interface LocalUser {
   id: string;
-  authSubject: string;
+  displayName: string | null;
   tuCartonCode: string;
-  phoneVerifiedAt: string | null;
 }
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly database: DatabaseService,
-    private readonly phoneProvider: FakePhoneVerificationProvider,
-  ) {}
+  constructor(private readonly database: DatabaseService) {}
 
-  async bootstrap(identity: AuthenticatedIdentity): Promise<LocalUser> {
-    const existing = await this.database.db.query.users.findFirst({
-      where: eq(users.authSubject, identity.subject),
-    });
-    if (existing) return this.toLocalUser(existing);
-
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const user = {
-        id: randomUUID(),
-        authSubject: identity.subject,
-        tuCartonCode: this.createTuCartonCode(),
-      };
-      try {
-        const [created] = await this.database.db.insert(users).values(user).returning();
-        await this.audit(created.id, 'AUTH_BOOTSTRAPPED');
-        return this.toLocalUser(created);
-      } catch (error: unknown) {
-        if (!this.isUniqueViolation(error) || attempt === 4) throw error;
-        const concurrent = await this.database.db.query.users.findFirst({
-          where: eq(users.authSubject, identity.subject),
-        });
-        if (concurrent) return this.toLocalUser(concurrent);
-      }
-    }
-    throw new Error('Unable to create a local user.');
-  }
-
-  async startPhoneVerification(
-    user: LocalUser,
-    phoneE164: string,
-  ): Promise<{ verificationId: string }> {
-    if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) {
-      throw new UnauthorizedException({
-        code: 'PHONE_INVALID',
-        message: 'A valid E.164 phone number is required.',
-      });
-    }
-    return this.phoneProvider.start(user.id, phoneE164);
-  }
-
-  async startPhoneAccess(
-    phoneInput: string,
-  ): Promise<{ verificationId: string; phoneE164: string }> {
-    const phoneE164 = this.normalizePhone(phoneInput);
-    return {
-      ...(await this.phoneProvider.start(this.phoneSubject(phoneE164), phoneE164)),
-      phoneE164,
-    };
-  }
-
-  async verifyPhoneAccess(
-    phoneInput: string,
-    verificationId: string,
-    code: string,
-  ): Promise<LocalUser> {
-    const phoneE164 = this.normalizePhone(phoneInput);
-    const result = await this.phoneProvider.verify(
-      this.phoneSubject(phoneE164),
-      verificationId,
-      code,
-    );
-    if (!result.approved || result.phoneE164 !== phoneE164) {
-      throw new UnauthorizedException({
-        code: 'PHONE_CODE_INVALID',
-        message: 'The verification code is invalid or expired.',
-      });
-    }
-
-    const existing = await this.database.db.query.users.findFirst({
-      where: eq(users.phoneE164, phoneE164),
-    });
-    if (existing) {
-      await this.audit(existing.id, 'PHONE_ACCESS_RESTORED');
-      return this.toLocalUser(existing);
-    }
-
+  async register(input: { displayName: string; phone: string; passcode: string }): Promise<LocalUser> {
+    const displayName = input.displayName?.trim();
+    const phoneE164 = this.requirePhone(input.phone);
+    this.requireDisplayName(displayName);
+    this.requirePasscode(input.passcode);
     const user = {
       id: randomUUID(),
       authSubject: this.phoneSubject(phoneE164),
+      displayName,
+      passcodeHash: await hashPasscode(input.passcode),
       phoneE164,
-      phoneVerifiedAt: new Date(),
       tuCartonCode: this.createTuCartonCode(),
     };
     try {
       const [created] = await this.database.db.insert(users).values(user).returning();
-      await this.audit(created.id, 'PHONE_ACCOUNT_CREATED');
+      await this.audit(created.id, 'ACCOUNT_REGISTERED');
       return this.toLocalUser(created);
-    } catch (error: unknown) {
-      if (!this.isUniqueViolation(error)) throw error;
-      const concurrent = await this.database.db.query.users.findFirst({
-        where: eq(users.phoneE164, phoneE164),
-      });
-      if (concurrent) return this.toLocalUser(concurrent);
-      throw error;
-    }
-  }
-
-  async findById(userId: string): Promise<LocalUser> {
-    const user = await this.database.db.query.users.findFirst({ where: eq(users.id, userId) });
-    if (!user)
-      throw new UnauthorizedException({ code: 'SESSION_INVALID', message: 'Session is invalid.' });
-    return this.toLocalUser(user);
-  }
-
-  async verifyPhone(user: LocalUser, verificationId: string, code: string): Promise<LocalUser> {
-    const result = await this.phoneProvider.verify(user.id, verificationId, code);
-    if (!result.approved) {
-      throw new UnauthorizedException({
-        code: 'PHONE_CODE_INVALID',
-        message: 'The verification code is invalid or expired.',
-      });
-    }
-    let updated: typeof users.$inferSelect;
-    try {
-      const [record] = await this.database.db
-        .update(users)
-        .set({
-          phoneE164: result.phoneE164,
-          phoneVerifiedAt: new Date(),
-        })
-        .where(eq(users.id, user.id))
-        .returning();
-      updated = record;
     } catch (error: unknown) {
       if (this.isUniqueViolation(error)) {
         throw new ConflictException({
-          code: 'PHONE_ALREADY_VERIFIED',
-          message: 'This phone number is already verified on another account.',
+          code: 'PHONE_ALREADY_REGISTERED',
+          message: 'Este número ya tiene una cuenta. Inicia sesión.',
         });
       }
       throw error;
     }
-    await this.audit(updated.id, 'PHONE_VERIFIED');
-    return this.toLocalUser(updated);
+  }
+
+  async login(phoneInput: string, passcode: string): Promise<LocalUser> {
+    const phoneE164 = this.requirePhone(phoneInput);
+    const user = await this.database.db.query.users.findFirst({ where: eq(users.phoneE164, phoneE164) });
+    if (!user?.passcodeHash || !(await matchesPasscode(passcode, user.passcodeHash))) {
+      throw this.invalidCredentials();
+    }
+    await this.audit(user.id, 'PASSCODE_LOGIN');
+    return this.toLocalUser(user);
+  }
+
+  async findById(userId: string): Promise<LocalUser> {
+    const user = await this.database.db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user) {
+      throw new UnauthorizedException({ code: 'SESSION_INVALID', message: 'La sesión no es válida.' });
+    }
+    return this.toLocalUser(user);
+  }
+
+  private requirePhone(input: string): string {
+    const phoneE164 = normalizeDominicanPhone(input ?? '');
+    if (phoneE164) return phoneE164;
+    throw new ConflictException({
+      code: 'PHONE_INVALID',
+      message: 'Escribe un número dominicano válido.',
+    });
+  }
+
+  private requireDisplayName(name: string | undefined): asserts name is string {
+    if (!name || name.length < 2 || name.length > 120) {
+      throw new ConflictException({ code: 'NAME_INVALID', message: 'Escribe tu nombre completo.' });
+    }
+  }
+
+  private requirePasscode(passcode: string): void {
+    if (!isValidPasscode(passcode ?? '')) {
+      throw new ConflictException({
+        code: 'PASSCODE_INVALID',
+        message: 'Tu clave debe tener entre 4 y 6 números.',
+      });
+    }
   }
 
   private createTuCartonCode(): string {
     return randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase();
-  }
-
-  private normalizePhone(input: string): string {
-    const compact = input.trim().replace(/[\s().-]/g, '');
-    const digits = compact.replace(/^\+/, '');
-    const dominicanLocal = /^(809|829|849)\d{7}$/.test(digits);
-    const phoneE164 = dominicanLocal
-      ? `+1${digits}`
-      : compact.startsWith('+')
-        ? `+${digits}`
-        : `+${digits}`;
-    if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) {
-      throw new UnauthorizedException({
-        code: 'PHONE_INVALID',
-        message: 'A valid phone number is required.',
-      });
-    }
-    return phoneE164;
   }
 
   private phoneSubject(phoneE164: string): string {
@@ -186,16 +98,18 @@ export class AuthService {
     return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
   }
 
+  private invalidCredentials(): UnauthorizedException {
+    return new UnauthorizedException({
+      code: 'CREDENTIALS_INVALID',
+      message: 'El número o la clave no coinciden.',
+    });
+  }
+
   private async audit(userId: string, action: string): Promise<void> {
     await this.database.db.insert(authAuditEvents).values({ id: randomUUID(), userId, action });
   }
 
   private toLocalUser(user: typeof users.$inferSelect): LocalUser {
-    return {
-      id: user.id,
-      authSubject: user.authSubject,
-      tuCartonCode: user.tuCartonCode,
-      phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
-    };
+    return { id: user.id, displayName: user.displayName, tuCartonCode: user.tuCartonCode };
   }
 }
