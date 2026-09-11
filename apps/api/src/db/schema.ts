@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
@@ -26,5 +26,50 @@ export const localSessions = pgTable('local_sessions', {
   refreshTokenHash: text('refresh_token_hash').notNull().unique(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const businessMemberRole = pgEnum('business_member_role', ['OWNER', 'MEMBER']);
+export const debtStatus = pgEnum('debt_status', ['PENDING_CUSTOMER_ACK', 'CONFIRMED']);
+
+export const businesses = pgTable('businesses', {
+  id: uuid('id').primaryKey(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const businessMembers = pgTable(
+  'business_members',
+  {
+    id: uuid('id').primaryKey(),
+    businessId: uuid('business_id').notNull().references(() => businesses.id),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    role: businessMemberRole('role').notNull().default('MEMBER'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('business_members_business_user').on(table.businessId, table.userId)],
+);
+
+export const customerRelationships = pgTable(
+  'customer_relationships',
+  {
+    id: uuid('id').primaryKey(),
+    businessId: uuid('business_id').notNull().references(() => businesses.id),
+    customerUserId: uuid('customer_user_id').notNull().references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('customer_relationships_business_customer').on(table.businessId, table.customerUserId)],
+);
+
+export const debts = pgTable('debts', {
+  id: uuid('id').primaryKey(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  customerUserId: uuid('customer_user_id').notNull().references(() => users.id),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id),
+  amountMinor: integer('amount_minor').notNull(),
+  currency: text('currency').notNull().default('DOP'),
+  note: text('note'),
+  status: debtStatus('status').notNull().default('PENDING_CUSTOMER_ACK'),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

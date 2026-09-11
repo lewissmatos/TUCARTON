@@ -8,5 +8,6 @@ import { LocalSessionService } from './local-session.service.js';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, AuthTokenVerifier, FakePhoneVerificationProvider, LocalSessionService],
+  exports: [LocalSessionService],
 })
 export class AuthModule {}

@@ -10,14 +10,7 @@
       "expo-router",
       "expo-secure-store",
       "expo-sqlite",
-      "expo-camera",
-      [
-        "react-native-auth0",
-        {
-          "domain": "dev-cwpsbs7tbid3scpa.us.auth0.com",
-          "customScheme": "tucarton"
-        }
-      ]
+      "expo-camera"
     ],
     "experiments": {
       "typedRoutes": true
